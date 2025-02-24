@@ -1,18 +1,14 @@
-from typing import Optional
+from typing import List
 
-from fastapi import FastAPI, Request, Response, status, HTTPException
-from pydantic import BaseModel
+from fastapi import FastAPI, status, HTTPException, Depends
+from sqlalchemy.orm import Session
 
+from . import models
+from .database import engine, get_db
+from .schemas import Post, BaseResponse, PostResponse
+
+models.Base.metadata.create_all(bind=engine)
 app = FastAPI()
-
-
-class Post(BaseModel):
-    id: int
-    title: str
-    content: str
-    published: bool = True
-    rating: Optional[int] = None
-
 
 app_posts = [
     {"id": 1, "title": "FastApi", "content": "Learning FastApi", "published": True, "rating": 1},
@@ -38,43 +34,65 @@ async def root():
     return {"message": "Hello World!"}
 
 
-@app.get("/posts")
-async def get_posts():
-    return {"posts": app_posts}
+@app.get("/posts", response_model=BaseResponse[List[PostResponse]])
+async def get_posts(db: Session = Depends(get_db)):
+    posts = db.query(models.Post).all()
+    if not posts:
+        BaseResponse.error("Request Failed", "Could retrieve posts", status_code=status.HTTP_404_NOT_FOUND)
+    return BaseResponse.success(
+        data=[PostResponse.model_validate(post) for post in posts],
+        message="Posts retrieved successfully"
+    )
 
 
-@app.post("/posts", status_code=status.HTTP_201_CREATED)
-async def create_posts(post: Post):
-    app_posts.append(post.dict())
-    return {"data": post}
+@app.post("/posts", response_model=BaseResponse[PostResponse], status_code=status.HTTP_201_CREATED)
+async def create_posts(post: Post, db: Session = Depends(get_db)):
+    try:
+        new_post = models.Post(**post.model_dump())
+        db.add(new_post)
+        db.commit()
+        db.refresh(new_post)
+        return BaseResponse.success(data=PostResponse.model_validate(new_post), message="Post created successfully",
+                                    status_code=status.HTTP_201_CREATED)
+    except Exception as e:
+        db.rollback()  # Rollback changes if an error occurs
+        return BaseResponse.error(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            message="Failed to create post",
+            reason=str(e)
+        )
 
 
-@app.get("/posts/{post_id}")
-async def get_post(post_id: int, response: Response):
-    post = find_post(post_id)
+@app.get("/posts/{post_id}", response_model=BaseResponse[PostResponse])
+async def get_post(post_id: int, db: Session = Depends(get_db)):
+    post = db.query(models.Post).filter(models.Post.id == post_id).first()
     if not post:
-        # response.status_code = status.HTTP_404_NOT_FOUND
-        # return {'message': f"Post with id: {post_id} not found"}
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Post with id: {post_id} not found")
-    return {"data": post}
+        BaseResponse.error("Request Failed", f"Post with id: {post_id} not found",
+                           status_code=status.HTTP_404_NOT_FOUND)
+    return BaseResponse.success(data=PostResponse.model_validate(post), message="Post retrieved successfully",
+                                status_code=status.HTTP_200_OK)
 
 
-@app.delete("/posts/{post_id}")
-async def delete_post(post_id: int):
-    post = find_post(post_id)
-    post_index = find_post_index(post_id)
+@app.delete("/posts/{post_id}", response_model=BaseResponse[PostResponse])
+async def delete_post(post_id: int, db: Session = Depends(get_db)):
+    post = db.query(models.Post).filter(models.Post.id == post_id).first()
     if not post:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Post with id: {post_id} not found")
-    app_posts.pop(post_index)
-    return {"data": f'Post with id: {post_id} deleted'}
+        BaseResponse.error("Request Failed", f"Post with id: {post_id} not found",
+                           status_code=status.HTTP_404_NOT_FOUND)
+    db.delete(post)
+    db.commit()
+    return BaseResponse.success(data=None, message="Post deleted successfully")
 
 
-@app.put("/posts/{post_id}")
-async def update_post(post_id: int, post: Post):
-    post_index = find_post_index(post_id)
-    if not post_index:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Post with id: {post_id} not found")
-    post_dict = post.dict()
-    post_dict["id"] = post_id
-    app_posts[post_index] = post_dict
-    return {"data": post_dict}
+@app.put("/posts/{post_id}", response_model=BaseResponse[PostResponse])
+async def update_post(post_id: int, updated_post: Post, db: Session = Depends(get_db)):
+    post = db.query(models.Post).filter(models.Post.id == post_id).first()
+    if not post:
+        BaseResponse.error("Request Failed", f"Post with id: {post_id} not found",
+                           status_code=status.HTTP_404_NOT_FOUND)
+    for field, value in updated_post.model_dump().items():
+        setattr(post, field, value)
+    db.commit()
+    db.refresh(post)
+    return BaseResponse.success(data=PostResponse.model_validate(post), message="Post updated successfully",
+                                status_code=status.HTTP_200_OK)
