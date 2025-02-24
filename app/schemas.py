@@ -3,13 +3,27 @@ from http import HTTPStatus
 from typing import TypeVar, Generic, Optional
 
 from fastapi import HTTPException
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, EmailStr
 
 
 class Post(BaseModel):
     title: str
     content: str
     published: bool = True
+
+
+class UserCreate(BaseModel):
+    email: EmailStr
+    password: str
+
+
+class UserResponse(BaseModel):
+    id: int
+    email: EmailStr
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
 
 
 class PostResponse(BaseModel):
