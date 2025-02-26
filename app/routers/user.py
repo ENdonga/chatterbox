@@ -6,7 +6,7 @@ from app import utils, models
 from app.database import get_db
 from app.schemas import BaseResponse, UserResponse, UserCreate
 
-router = APIRouter(prefix="/users", tags=["user"])
+router = APIRouter(prefix="/users", tags=["Users"])
 
 
 @router.post("/", response_model=BaseResponse[UserResponse])
@@ -30,9 +30,9 @@ async def create_user(user: UserCreate, db: Session = Depends(get_db)):
         )
 
 
-@router.get("/{id}", response_model=BaseResponse[UserResponse])
+@router.get("/{user_id}", response_model=BaseResponse[UserResponse])
 async def get_user(user_id: int, db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
-        BaseResponse.error("Request Failed", f"User with id: {user_id} not found")
+        return BaseResponse.error("Request Failed", f"User with id: {user_id} not found")
     return BaseResponse.success(data=UserResponse.model_validate(user), message="User retrieved successfully")

@@ -8,7 +8,7 @@ from app import models
 from app.database import get_db
 from app.schemas import BaseResponse, PostResponse, Post
 
-router = APIRouter(prefix="/posts", tags=["posts"])
+router = APIRouter(prefix="/posts", tags=["Posts"])
 
 
 @router.get("/", response_model=BaseResponse[List[PostResponse]])
