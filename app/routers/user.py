@@ -1,4 +1,5 @@
-from fastapi import Depends, APIRouter
+from fastapi import Depends, APIRouter, HTTPException
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from starlette import status
 
@@ -21,18 +22,27 @@ async def create_user(user: UserCreate, db: Session = Depends(get_db)):
         db.refresh(new_user)
         return BaseResponse.success(data=UserResponse.model_validate(new_user), message="User created successfully",
                                     status_code=status.HTTP_201_CREATED)
+
+
+    except IntegrityError as e:
+        db.rollback()
+        raise e
+
     except Exception as e:
         db.rollback()
-        return BaseResponse.error(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            message="Failed to create user",
-            reason=str(e)
-        )
+        raise e
 
 
 @router.get("/{user_id}", response_model=BaseResponse[UserResponse])
 async def get_user(user_id: int, db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
-        return BaseResponse.error("Request Failed", f"User with id: {user_id} not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=BaseResponse.error(
+                message="User not found",
+                reason=f"User with id: {user_id} not found",
+                status_code=status.HTTP_404_NOT_FOUND
+            )
+        )
     return BaseResponse.success(data=UserResponse.model_validate(user), message="User retrieved successfully")

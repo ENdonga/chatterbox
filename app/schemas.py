@@ -39,6 +39,7 @@ class UserCreate(BaseModel):
 class UserResponse(BaseModel):
     id: int
     email: EmailStr
+
     # created_at: datetime
 
     class Config:
@@ -53,6 +54,11 @@ class PostResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
 
 
 # Generic Type Variable for data
@@ -76,6 +82,7 @@ class BaseResponse(BaseModel, Generic[T]):
 
     @classmethod
     def success(cls, data: Optional[T] = None, message: str = "Success", status_code: int = 200):
+        """Creates a successful API response"""
         response = cls(
             timestamp=datetime.now(TIMEZONE).isoformat(),
             status_code=status_code,
@@ -87,13 +94,12 @@ class BaseResponse(BaseModel, Generic[T]):
         return JSONResponse(content=response, status_code=status_code)
 
     @classmethod
-    def error(cls, message: str, reason: Optional[str] = None, status_code: int = 404):
-        response = cls(
-            timestamp=datetime.now(TIMEZONE).isoformat(),
-            status_code=status_code,
-            status=HTTPStatus(status_code).phrase.replace(" ", "_").upper(),
-            message=message,
-            reason=reason
-        ).model_dump(exclude_none=True)
-
-        return JSONResponse(content=response, status_code=status_code)
+    def error(cls, message: str, reason: Optional[str] = None, status_code: int = 400):
+        """Returns a dictionary instead of JSONResponse so exception handlers can use it"""
+        return {
+            "timestamp": datetime.now().isoformat(),
+            "status_code": status_code,
+            "status": HTTPStatus(status_code).phrase.replace(" ", "_").upper(),
+            "message": message,
+            "reason": reason
+        }

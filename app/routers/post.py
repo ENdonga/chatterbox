@@ -1,6 +1,7 @@
 from typing import List
 
-from fastapi import Depends, APIRouter
+from fastapi import Depends, APIRouter, HTTPException
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from starlette import status
 
@@ -15,7 +16,7 @@ router = APIRouter(prefix="/posts", tags=["Posts"])
 async def get_posts(db: Session = Depends(get_db)):
     posts = db.query(models.Post).all()
     if not posts:
-        return BaseResponse.error("Request Failed", "Could not retrieve posts. No posts found", status_code=status.HTTP_404_NOT_FOUND)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Could not retrieve posts. No posts found")
     return BaseResponse.success(
         data=[PostResponse.model_validate(post) for post in posts],
         message="Posts retrieved successfully"
@@ -31,21 +32,20 @@ async def create_posts(post: Post, db: Session = Depends(get_db)):
         db.refresh(new_post)
         return BaseResponse.success(data=PostResponse.model_validate(new_post), message="Post created successfully",
                                     status_code=status.HTTP_201_CREATED)
+    except IntegrityError as e:
+        db.rollback()
+        raise e
+
     except Exception as e:
         db.rollback()  # Rollback changes if an error occurs
-        return BaseResponse.error(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            message="Failed to create post",
-            reason=str(e)
-        )
+        raise e
 
 
 @router.get("/{post_id}", response_model=BaseResponse[PostResponse])
 async def get_post(post_id: int, db: Session = Depends(get_db)):
     post = db.query(models.Post).filter(models.Post.id == post_id).first()
     if not post:
-        return BaseResponse.error("Request Failed", f"Post with id: {post_id} not found",
-                                  status_code=status.HTTP_404_NOT_FOUND)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Post with id: {post_id} not found")
     return BaseResponse.success(data=PostResponse.model_validate(post), message="Post retrieved successfully",
                                 status_code=status.HTTP_200_OK)
 
@@ -54,8 +54,7 @@ async def get_post(post_id: int, db: Session = Depends(get_db)):
 async def delete_post(post_id: int, db: Session = Depends(get_db)):
     post = db.query(models.Post).filter(models.Post.id == post_id).first()
     if not post:
-        return BaseResponse.error("Request Failed", f"Post with id: {post_id} not found",
-                                  status_code=status.HTTP_404_NOT_FOUND)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Post with id: {post_id} not found")
     db.delete(post)
     db.commit()
     return BaseResponse.success(data=None, message="Post deleted successfully")
@@ -65,8 +64,7 @@ async def delete_post(post_id: int, db: Session = Depends(get_db)):
 async def update_post(post_id: int, updated_post: Post, db: Session = Depends(get_db)):
     post = db.query(models.Post).filter(models.Post.id == post_id).first()
     if not post:
-        return BaseResponse.error("Request Failed", f"Post with id: {post_id} not found",
-                                  status_code=status.HTTP_404_NOT_FOUND)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Post with id: {post_id} not found")
     for field, value in updated_post.model_dump().items():
         setattr(post, field, value)
     db.commit()
