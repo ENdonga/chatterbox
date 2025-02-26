@@ -15,7 +15,7 @@ router = APIRouter(prefix="/posts", tags=["posts"])
 async def get_posts(db: Session = Depends(get_db)):
     posts = db.query(models.Post).all()
     if not posts:
-        BaseResponse.error("Request Failed", "Could retrieve posts", status_code=status.HTTP_404_NOT_FOUND)
+        return BaseResponse.error("Request Failed", "Could not retrieve posts. No posts found", status_code=status.HTTP_404_NOT_FOUND)
     return BaseResponse.success(
         data=[PostResponse.model_validate(post) for post in posts],
         message="Posts retrieved successfully"
@@ -44,8 +44,8 @@ async def create_posts(post: Post, db: Session = Depends(get_db)):
 async def get_post(post_id: int, db: Session = Depends(get_db)):
     post = db.query(models.Post).filter(models.Post.id == post_id).first()
     if not post:
-        BaseResponse.error("Request Failed", f"Post with id: {post_id} not found",
-                           status_code=status.HTTP_404_NOT_FOUND)
+        return BaseResponse.error("Request Failed", f"Post with id: {post_id} not found",
+                                  status_code=status.HTTP_404_NOT_FOUND)
     return BaseResponse.success(data=PostResponse.model_validate(post), message="Post retrieved successfully",
                                 status_code=status.HTTP_200_OK)
 
@@ -54,8 +54,8 @@ async def get_post(post_id: int, db: Session = Depends(get_db)):
 async def delete_post(post_id: int, db: Session = Depends(get_db)):
     post = db.query(models.Post).filter(models.Post.id == post_id).first()
     if not post:
-        BaseResponse.error("Request Failed", f"Post with id: {post_id} not found",
-                           status_code=status.HTTP_404_NOT_FOUND)
+        return BaseResponse.error("Request Failed", f"Post with id: {post_id} not found",
+                                  status_code=status.HTTP_404_NOT_FOUND)
     db.delete(post)
     db.commit()
     return BaseResponse.success(data=None, message="Post deleted successfully")
@@ -65,8 +65,8 @@ async def delete_post(post_id: int, db: Session = Depends(get_db)):
 async def update_post(post_id: int, updated_post: Post, db: Session = Depends(get_db)):
     post = db.query(models.Post).filter(models.Post.id == post_id).first()
     if not post:
-        BaseResponse.error("Request Failed", f"Post with id: {post_id} not found",
-                           status_code=status.HTTP_404_NOT_FOUND)
+        return BaseResponse.error("Request Failed", f"Post with id: {post_id} not found",
+                                  status_code=status.HTTP_404_NOT_FOUND)
     for field, value in updated_post.model_dump().items():
         setattr(post, field, value)
     db.commit()
