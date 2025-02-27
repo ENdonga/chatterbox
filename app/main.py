@@ -1,9 +1,9 @@
 from fastapi import FastAPI, HTTPException
 from sqlalchemy.exc import IntegrityError
 
-from . import models
-from .database import engine
-from .exceptions import handle_general_exception, handle_http_exception, handle_db_integrity_exception
+from .database import models
+from .database.database import engine
+from .exceptions.exceptions import handle_db_integrity_exception, handle_http_exception, handle_general_exception
 from .routers import post, user, authentication
 
 models.Base.metadata.create_all(bind=engine)
