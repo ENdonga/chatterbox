@@ -1,5 +1,8 @@
+from datetime import datetime
+
 from fastapi import HTTPException
 from fastapi.params import Depends
+from pydantic import EmailStr
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from starlette import status
@@ -29,12 +32,35 @@ class UserService():
             )
         return UserResponse.model_validate(user)
 
+    def get_user_by_email(self, email: EmailStr) -> User | None:
+        """Fetch a user by email. Returns None if not found"""
+        return self.db.query(User).filter(User.email == email).first()
+
+    def user_exists(self, email: EmailStr) -> bool:
+        """Check if a user with the given email exists."""
+        user = self.get_user_by_email(email)
+        return True if user is not None else False
+
     def create_user(self, user: UserCreate) -> UserResponse:
         try:
+            # check if user already exists
+            if self.user_exists(user.email):
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=BaseResponse.error(
+                        message="User already exists",
+                        status_code=status.HTTP_409_CONFLICT,
+                        reason=f"User with email: {user.email} already exists"
+                    )
+                )
+
+            updated_data = user.model_dump()
+            updated_data['created_at'] = datetime.now()
             # Hash the password
             hashed_password = utils.hash_password(user.password)
             user.password = hashed_password
-            new_user = models.User(**user.model_dump())
+            # converts this Pydantic user object into a dictionary.
+            new_user = models.User(**updated_data)
             self.db.add(new_user)
             self.db.commit()
             self.db.refresh(new_user)
