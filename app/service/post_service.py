@@ -5,9 +5,9 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from starlette import status
 
-from app import models
-from app.database import get_db
-from app.schemas import PostResponse, Post
+from app.database import models
+from app.database.database import get_db
+from app.schemas.post import PostResponse, Post
 
 
 class PostService:

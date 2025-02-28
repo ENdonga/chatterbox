@@ -1,7 +1,8 @@
 from fastapi import Depends, APIRouter
 from starlette.status import HTTP_200_OK
 
-from app.schemas import BaseResponse, UserLogin
+from app.schemas.base_response import BaseResponse
+from app.schemas.user import UserLogin
 from app.service.auth_service import AuthService
 
 router = APIRouter(tags=["Authentication"])

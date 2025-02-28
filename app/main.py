@@ -1,11 +1,9 @@
-from fastapi import FastAPI, HTTPException
-from sqlalchemy.exc import IntegrityError
+from fastapi import FastAPI
 
 from .database import models
 from .database.database import engine
-from .exceptions.custom_exceptions import EntityNotFound, DatabaseIntegrityError
+from .exceptions.custom_exceptions import DatabaseIntegrityError
 from .exceptions.exception_handler import custom_exception_handler
-from .exceptions.exceptions import handle_db_integrity_exception, handle_http_exception, handle_general_exception
 from .routers import post, user, authentication
 
 models.Base.metadata.create_all(bind=engine)

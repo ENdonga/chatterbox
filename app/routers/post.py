@@ -3,7 +3,8 @@ from typing import List
 from fastapi import Depends, APIRouter
 from starlette import status
 
-from app.schemas import BaseResponse, PostResponse, Post
+from app.schemas.base_response import BaseResponse
+from app.schemas.post import PostResponse, Post
 from app.service.post_service import PostService
 
 router = APIRouter(prefix="/posts", tags=["Posts"])

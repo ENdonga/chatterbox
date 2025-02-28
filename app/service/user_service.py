@@ -4,10 +4,12 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from starlette import status
 
-from app import utils, models
-from app.database import get_db
-from app.models import User
-from app.schemas import UserResponse, BaseResponse, UserCreate
+from app.database import models
+from app.database.database import get_db
+from app.database.models import User
+from app.schemas.base_response import BaseResponse
+from app.schemas.user import UserResponse, UserCreate
+from app.utils import utils
 
 
 class UserService():

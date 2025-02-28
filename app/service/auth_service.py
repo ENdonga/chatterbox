@@ -2,9 +2,11 @@ from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
 from starlette.status import HTTP_401_UNAUTHORIZED, HTTP_200_OK
 
-from app import models, utils
-from app.database import get_db
-from app.schemas import UserLogin, BaseResponse
+from app.database import models
+from app.database.database import get_db
+from app.schemas.base_response import BaseResponse
+from app.schemas.user import UserLogin
+from app.utils import utils
 
 
 class AuthService:

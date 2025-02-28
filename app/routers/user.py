@@ -1,7 +1,8 @@
 from fastapi import Depends, APIRouter
 from starlette import status
 
-from app.schemas import BaseResponse, UserResponse, UserCreate
+from app.schemas.base_response import BaseResponse
+from app.schemas.user import UserResponse, UserCreate
 from app.service.user_service import UserService
 
 router = APIRouter(prefix="/users", tags=["Users"])

@@ -6,7 +6,7 @@ from psycopg2.errors import UniqueViolation
 from starlette.responses import JSONResponse
 from starlette.status import HTTP_400_BAD_REQUEST, HTTP_500_INTERNAL_SERVER_ERROR
 
-from app.schemas.schemas import BaseResponse
+from app.schemas.base_response import BaseResponse
 
 logger = logging.getLogger("uvicorn.error")
 
