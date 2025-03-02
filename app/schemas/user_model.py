@@ -2,7 +2,7 @@ from pydantic import BaseModel, Field, field_validator, EmailStr
 from pydantic_core.core_schema import FieldValidationInfo
 
 
-class UserCreate(BaseModel):
+class UserCreateModel(BaseModel):
     firstname: str = Field(..., max_length=15, min_length=3)
     lastname: str = Field(..., max_length=15, min_length=3)
     email: EmailStr = Field(..., strip_whitespace=True)
@@ -24,7 +24,7 @@ class UserCreate(BaseModel):
         return value
 
 
-class UserResponse(BaseModel):
+class UserResponseModel(BaseModel):
     id: int
     firstname: str
     lastname: str
@@ -37,6 +37,6 @@ class UserResponse(BaseModel):
         from_attributes = True
 
 
-class UserLogin(BaseModel):
+class UserLoginModel(BaseModel):
     email: EmailStr
     password: str

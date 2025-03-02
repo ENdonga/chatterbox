@@ -1,44 +1,52 @@
-from datetime import datetime
-from http import HTTPStatus
+import logging
 
+from fastapi.responses import JSONResponse, Response
+from sqlalchemy.exc import IntegrityError, OperationalError
 from starlette import status
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.requests import Request
-from starlette.responses import JSONResponse
 
-from .custom_exceptions import RequestValidationError, ResponseValidationError, DatabaseConnectionError, \
-    AuthorizationError, AuthenticationError, EntityNotFound, DatabaseIntegrityError
-
-
-def format_error_response(exception: Exception, status_code: int, message: str, reason: str) -> JSONResponse:
-    return JSONResponse(
-        status_code=status_code,
-        content={
-            "timestamp": datetime.now().isoformat(),
-            "status_code": status_code,
-            "status": HTTPStatus(status_code).phrase.replace(" ", "_").upper(),
-            "message": message,
-            "reason": reason,
-        }
-    )
+from app.exceptions.custom_exceptions import ChatterBoxException, UnknownHashException
+from app.utils.exception_util import create_error_response
 
 
-def custom_exception_handler(request: Request, exc: Exception) -> JSONResponse:
-    if isinstance(exc, RequestValidationError):
-        return format_error_response(exc, status.HTTP_400_BAD_REQUEST, "Request validation failed", str(exc.detail))
-    elif isinstance(exc, ResponseValidationError):
-        return format_error_response(exc, status.HTTP_400_BAD_REQUEST, "Response validation failed", str(exc.detail))
-    elif isinstance(exc, DatabaseConnectionError):
-        return format_error_response(exc, status.HTTP_500_INTERNAL_SERVER_ERROR, "Database connection failed",
-                                     str(exc.detail))
-    elif isinstance(exc, DatabaseIntegrityError):
-        return format_error_response(exc, status.HTTP_500_INTERNAL_SERVER_ERROR, "Unique constraint violation",
-                                     str(exc.detail))
-    elif isinstance(exc, AuthorizationError):
-        return format_error_response(exc, status.HTTP_403_FORBIDDEN, "Authorization error", str(exc.detail))
-    elif isinstance(exc, AuthenticationError):
-        return format_error_response(exc, status.HTTP_401_UNAUTHORIZED, "Authentication error", str(exc.detail))
-    elif isinstance(exc, EntityNotFound):
-        return format_error_response(exc, status.HTTP_404_NOT_FOUND, "Request failed", str(exc.detail))
+def chatterbox_exception_handler(request: Request, exc: ChatterBoxException) -> Response:
+    """Handles all ChatterBox custom exceptions."""
+    logging.error(f"Exception occurred at {request.url.path} - {exc.message}")
+    return create_error_response(status_code=exc.status_code, message=exc.message, reason=exc.reason)
 
-    return format_error_response(exc, status.HTTP_500_INTERNAL_SERVER_ERROR, "Internal server error",
-                                 "An unexpected error occurred")
+
+def unknown_hash_exception_handler(request: Request, exc: UnknownHashException) -> Response:
+    """Handles UnknownHashException (invalid password hash)."""
+    logging.error(f"Unknown hash error at {request.url.path} - {exc.message}")
+    return create_error_response(status_code=exc.status_code, message=exc.message, reason=exc.reason)
+
+
+async def http_exception_handler(request: Request, exc: StarletteHTTPException) -> JSONResponse:
+    """Handles HTTP validation errors (e.g., missing fields, invalid JSON)."""
+    logging.error(f"Exception occurred at {request.url.path} - {exc.detail}")
+    if exc.status_code == status.HTTP_404_NOT_FOUND:
+        reason = f"The requested resource '{request.url.path}' does not exist."
+        return create_error_response(status_code=exc.status_code, message="Resource not found", reason=reason)
+    return create_error_response(status_code=exc.status_code, message="Validation error", reason=exc.detail)
+
+
+async def integrity_error_handler(request: Request, exc: IntegrityError) -> JSONResponse:
+    """Handles database integrity errors (e.g., duplicate key violations)."""
+    logging.error(f"Database IntegrityError at {request.url.path} - {exc}")
+    return create_error_response(status_code=status.HTTP_400_BAD_REQUEST, message="Database integrity error",
+                                 reason="A database constraint was violated (e.g., duplicate entry).")
+
+
+async def database_connection_error_handler(request: Request, exc: OperationalError) -> JSONResponse:
+    """Handles database connection issues."""
+    logging.error(f"Database Connection Error at {request.url.path} - {exc}")
+
+    return create_error_response(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="Database connection error",
+                                 reason="Could not connect to the database. Please try again later.")
+
+
+async def general_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    """Catches unexpected errors not handled elsewhere."""
+    logging.error(f"Exception occurred at {request.url.path} - {exc}")
+    return create_error_response(status_code=500, message="An unexpected error occurred", reason=str(exc))
