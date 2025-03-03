@@ -26,6 +26,20 @@ class InvalidTokenException(ChatterBoxException):
         super().__init__(message="Invalid Token", reason=reason, status_code=status.HTTP_401_UNAUTHORIZED)
 
 
+class ExpiredTokenException(ChatterBoxException):
+    """Raised when a JWT token has expired"""
+
+    def __init__(self, reason: str = "Token has expired. Please log in again."):
+        super().__init__(message="Expired Token", reason=reason, status_code=status.HTTP_401_UNAUTHORIZED)
+
+
+class TokenSignatureException(ChatterBoxException):
+    """Raised when a JWT token signature is invalid"""
+
+    def __init__(self, reason: str = "Invalid token signature. Please log in again."):
+        super().__init__(message="Invalid Token Signature", reason=reason, status_code=status.HTTP_401_UNAUTHORIZED)
+
+
 class EntityNotFoundException(ChatterBoxException):
     """The entity the user is trying to access is not found"""
 
@@ -50,7 +64,7 @@ class InvalidCredentialsException(ChatterBoxException):
 
 
 class UnknownHashException(ChatterBoxException):
-    """The provided password does not match the user's hashed pasword"""
+    """The provided password does not match the user's hashed password"""
 
     def __init__(self, reason: str = "Invalid credentials provided. Please try again."):
         super().__init__(message="Login failed", reason=reason, status_code=status.HTTP_401_UNAUTHORIZED)
@@ -102,9 +116,13 @@ class RequestValidationException(ChatterBoxException):
 class InternalServerError(ChatterBoxException):
     """Generic internal server error."""
 
-    def __init__(self, reason: str = "An unexpected error occurred on the server"):
-        super().__init__(message="Internal Server Error", reason=reason,
-                         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    def __init__(self, message: str = "Internal Server Error",
+                 reason: str = "An unexpected error occurred on the server"):
+        super().__init__(
+            message=message,
+            reason=reason,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
 # def create_exception_handler(status_code: int, details: dict) -> Callable[[Request, Exception], JSONResponse]:
 #     def exception_handler(request: Request, exception: ChatterBoxException) -> JSONResponse:
