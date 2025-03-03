@@ -14,6 +14,7 @@ from app.exceptions.custom_exceptions import (
     InvalidAuthorizationHeaderException,
     EntityNotFoundException
 )
+from app.service.user_service import UserService
 
 SECRET_KEY = config.SECRET_KEY
 JWT_ALGORITHM = config.ALGORITHM
@@ -68,16 +69,20 @@ def get_token_from_header(request: Request) -> str:
     return parts[1]
 
 
-def get_current_user(token: str = Depends(get_token_from_header)) -> dict:
+def get_current_user(token: str = Depends(get_token_from_header), user_service: UserService = Depends()) -> dict:
     """This is a dependency to get the current logged-in user from the access token."""
     if not token:
         raise InvalidAuthorizationHeaderException(reason="Token is required to access this resource.")
     payload = decode_access_token(token)
     if payload.get("refresh"):
         raise InvalidTokenException(reason="Please provide an access token.")
-    user = payload.get("user")
-    if not user:
+    user_data = payload.get("user")
+    if not user_data:
         # id identifier is not accessible since there is no user, so use 0 since there will be no ID 0 in db
         raise EntityNotFoundException(entity_name="User", identifier=0)
-    logging.info(f"Decoded user: {user}")
-    return user
+    # Check if the user in the token still exists in the database
+    user = user_service.get_user_by_id(user_data["id"])
+    if not user:
+        raise EntityNotFoundException(entity_name="User", identifier=user_data["id"])
+    logging.info(f"Authenticated user: {user}")
+    return user.model_dump()
