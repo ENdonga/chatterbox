@@ -12,19 +12,19 @@ from app.utils.exception_util import create_error_response
 
 def chatterbox_exception_handler(request: Request, exc: ChatterBoxException) -> Response:
     """Handles all ChatterBox custom exceptions."""
-    logging.error(f"Exception occurred at {request.url.path} - {exc.message}")
+    logging.exception(f"Exception occurred at {request.url.path} - {exc.message}")
     return create_error_response(status_code=exc.status_code, message=exc.message, reason=exc.reason)
 
 
 def unknown_hash_exception_handler(request: Request, exc: UnknownHashException) -> Response:
     """Handles UnknownHashException (invalid password hash)."""
-    logging.error(f"Unknown hash error at {request.url.path} - {exc.message}")
+    logging.exception(f"Unknown hash error at {request.url.path} - {exc.message}")
     return create_error_response(status_code=exc.status_code, message=exc.message, reason=exc.reason)
 
 
 async def http_exception_handler(request: Request, exc: StarletteHTTPException) -> JSONResponse:
     """Handles HTTP validation errors (e.g., missing fields, invalid JSON)."""
-    logging.error(f"Exception occurred at {request.url.path} - {exc.detail}")
+    logging.exception(f"Exception occurred at {request.url.path} - {exc.detail}")
     if exc.status_code == status.HTTP_404_NOT_FOUND:
         reason = f"The requested resource '{request.url.path}' does not exist."
         return create_error_response(status_code=exc.status_code, message="Resource not found", reason=reason)
@@ -33,20 +33,19 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException) 
 
 async def integrity_error_handler(request: Request, exc: IntegrityError) -> JSONResponse:
     """Handles database integrity errors (e.g., duplicate key violations)."""
-    logging.error(f"Database IntegrityError at {request.url.path} - {exc}")
+    logging.exception(f"Database IntegrityError at {request.url.path} - {exc}")
     return create_error_response(status_code=status.HTTP_400_BAD_REQUEST, message="Database integrity error",
                                  reason="A database constraint was violated (e.g., duplicate entry).")
 
 
 async def database_connection_error_handler(request: Request, exc: OperationalError) -> JSONResponse:
     """Handles database connection issues."""
-    logging.error(f"Database Connection Error at {request.url.path} - {exc}")
-
+    logging.exception(f"Database Connection Error at {request.url.path} - {exc}")
     return create_error_response(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="Database connection error",
                                  reason="Could not connect to the database. Please try again later.")
 
 
 async def general_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """Catches unexpected errors not handled elsewhere."""
-    logging.error(f"Exception occurred at {request.url.path} - {exc}")
+    logging.exception(f"Exception occurred at {request.url.path} - {exc}")
     return create_error_response(status_code=500, message="An unexpected error occurred", reason=str(exc))

@@ -26,6 +26,13 @@ class InvalidTokenException(ChatterBoxException):
         super().__init__(message="Invalid Token", reason=reason, status_code=status.HTTP_401_UNAUTHORIZED)
 
 
+class InvalidAuthorizationHeaderException(ChatterBoxException):
+    """The Authorization header is missing or incorrectly formatted."""
+
+    def __init__(self, reason: str = "Authorization header is missing or incorrectly formatted"):
+        super().__init__(message="Invalid Authorization Header", reason=reason, status_code=status.HTTP_400_BAD_REQUEST)
+
+
 class ExpiredTokenException(ChatterBoxException):
     """Raised when a JWT token has expired"""
 

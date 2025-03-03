@@ -1,3 +1,5 @@
+from typing import List
+
 from fastapi.params import Depends
 from pydantic import EmailStr
 from sqlalchemy.exc import IntegrityError, OperationalError
@@ -21,6 +23,10 @@ from app.utils import password_util
 class UserService:
     def __init__(self, db: Session = Depends(get_db)):
         self.db = db
+
+    def get_all_users(self) -> List[UserResponseModel]:
+        users = self.db.query(models.User).all()
+        return [UserResponseModel.model_validate(user) for user in users]
 
     def get_user_by_id(self, user_id: int) -> UserResponseModel:
         user = self.db.query(User).filter(User.id == user_id).first()
