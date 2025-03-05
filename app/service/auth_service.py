@@ -27,10 +27,10 @@ class AuthService:
         user = self.db.query(models.User).filter(models.User.email == user_credentials.email).first()
         if not user:
             raise InvalidCredentialsException()
+        # check whether the provided password matches the hashed password in the db
+        if not password_util.verify_password(user_credentials.password, str(user.password)):
+            raise InvalidCredentialsException(reason="Invalid credentials provided!")
         try:
-            # check whether the provided password matches the hashed password in the db
-            if not password_util.verify_password(user_credentials.password, str(user.password)):
-                raise InvalidCredentialsException(reason="Invalid credentials provided!")
             # Generate access and refresh tokens
             user_data = {"id": user.id, "email": user.email}
             access_token = create_access_token(user_data)

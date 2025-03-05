@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException
-from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.exc import IntegrityError, OperationalError
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from .database import models
 from .database.database import engine
@@ -13,7 +13,6 @@ from .exceptions.exception_handler import (
     general_exception_handler,
     unknown_hash_exception_handler
 )
-from starlette.exceptions import HTTPException as StarletteHTTPException
 from .routers import post, user, authentication
 
 models.Base.metadata.create_all(bind=engine)
@@ -36,8 +35,6 @@ app = FastAPI(
         }
     ]
 )
-
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 # Register exception handlers
 app.add_exception_handler(ChatterBoxException, chatterbox_exception_handler)

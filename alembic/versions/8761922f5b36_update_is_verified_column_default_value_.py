@@ -9,7 +9,7 @@ from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
-from app.models import User, Post
+from app.database.models import User, Post
 
 
 # revision identifiers, used by Alembic.

@@ -3,6 +3,7 @@ from datetime import timedelta, datetime
 
 import jwt
 from fastapi import Depends
+from fastapi.security import OAuth2PasswordBearer
 from starlette.requests import Request
 from typing_extensions import Optional
 
@@ -20,6 +21,8 @@ SECRET_KEY = config.SECRET_KEY
 JWT_ALGORITHM = config.ALGORITHM
 EXPIRY_TIME_MINUTES = config.ACCESS_TOKEN_EXPIRE_MINUTES
 REFRESH_TOKEN_EXPIRY_DAY = config.REFRESH_TOKEN_EXPIRE_DAYS
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
 
 
 def create_access_token(user_data: dict, expiry: timedelta = None, refresh_token: bool = False) -> str:
