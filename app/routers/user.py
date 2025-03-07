@@ -5,7 +5,7 @@ from fastapi import Depends, APIRouter
 from starlette import status
 
 from app.schemas.base_response import BaseResponse
-from app.schemas.user_model import UserResponseModel, UserCreateModel
+from app.schemas.user_model import UserResponseModel, UserCreateModel, UpdateIsVerifiedModel
 from app.service.user_service import UserService
 from app.utils.token_util import get_current_user
 
@@ -33,3 +33,11 @@ async def get_users(user_service: UserService = Depends()):
     """Returns a list of all users."""
     users = user_service.get_all_users()
     return BaseResponse.success(data=users, message="Users retrieved successfully")
+
+
+@router.patch("/activate-user/{user_id}", response_model=BaseResponse[UserResponseModel])
+async def activate_user(user_id: int, update_data: UpdateIsVerifiedModel, user_service: UserService = Depends()):
+    """Activates a user."""
+    user = user_service.get_user_by_id(user_id)
+    updated_user = user_service.activate_user(user.id, update_data)
+    return BaseResponse.success(data=updated_user, message="User activated successfully")

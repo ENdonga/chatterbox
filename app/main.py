@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.openapi.utils import get_openapi
 from sqlalchemy.exc import IntegrityError, OperationalError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
@@ -16,11 +17,27 @@ from .exceptions.exception_handler import (
 from .routers import post, user, authentication
 
 models.Base.metadata.create_all(bind=engine)
-app = FastAPI(
-    title="My API",
-    description="This API provides authentication and user management services.",
-    version="1.0.0",
-    openapi_tags=[
+app = FastAPI()
+
+
+def custom_openapi():
+    if app.openapi_schema:
+        return app.openapi_schema
+    openapi_schema = get_openapi(
+        title="FastAPI application",
+        version="1.0.0",
+        description="JWT Authentication and Authorization",
+        routes=app.routes,
+    )
+    openapi_schema["components"]["securitySchemes"] = {
+        "BearerAuth": {
+            "type": "http",
+            "scheme": "bearer",
+            "bearerFormat": "JWT"
+        }
+    }
+    openapi_schema["security"] = [{"BearerAuth": []}]
+    openapi_schema['tags'] = [
         {
             "name": "Authentication",
             "description": "Endpoints for user authentication, including login and token generation.\nAfter successful login, an access token is provided, which is required for accessing secured endpoints.\nUse this token in the Authorization header as 'Bearer <token>' to authenticate requests. 🔐"
@@ -34,7 +51,11 @@ app = FastAPI(
             "description": "Endpoints for creating, retrieving, updating, and deleting posts.\nUsers can publish content, fetch posts, and interact with posts based on their permissions. ✍️"
         }
     ]
-)
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
+
+
+app.openapi = custom_openapi
 
 # Register exception handlers
 app.add_exception_handler(ChatterBoxException, chatterbox_exception_handler)

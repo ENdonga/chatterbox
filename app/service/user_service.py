@@ -1,3 +1,4 @@
+import logging
 from typing import List
 
 from fastapi.params import Depends
@@ -16,7 +17,7 @@ from app.exceptions.custom_exceptions import (
     DatabaseTimeoutException,
     InternalServerError
 )
-from app.schemas.user_model import UserResponseModel, UserCreateModel
+from app.schemas.user_model import UserResponseModel, UserCreateModel, UpdateIsVerifiedModel
 from app.utils import password_util
 
 
@@ -72,5 +73,24 @@ class UserService:
             raise DatabaseTimeoutException(reason="Database operation timed out. Please try again later.")
 
         except Exception as e:
+            self.db.rollback()
+            raise InternalServerError(reason=str(e))
+
+    def activate_user(self, user_id: int, update_data: UpdateIsVerifiedModel) -> UserResponseModel:
+        user = self.get_user_by_id(user_id)
+        try:
+            # update user's is_verified flag
+            user.is_verified = update_data['is_verified']
+            self.db.commit()
+            self.db.refresh(user)
+            return UserResponseModel.model_validate(user)
+        except OperationalError:
+            self.db.rollback()
+            raise DatabaseConnectionException(reason="Failed to connect to the database. Please try again later.")
+        except TimeoutError:
+            self.db.rollback()
+            raise DatabaseTimeoutException(reason="Database operation timed out. Please try again later.")
+        except Exception as e:
+            logging.exception(e)
             self.db.rollback()
             raise InternalServerError(reason=str(e))

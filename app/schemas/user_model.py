@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+
 from pydantic import BaseModel, Field, field_validator, EmailStr
 from pydantic_core.core_schema import FieldValidationInfo
 
@@ -40,3 +42,7 @@ class UserResponseModel(BaseModel):
 class UserLoginModel(BaseModel):
     email: EmailStr
     password: str
+
+
+class UpdateIsVerifiedModel(BaseModel):
+    is_verified: bool
