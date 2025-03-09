@@ -35,9 +35,10 @@ async def get_users(user_service: UserService = Depends()):
     return BaseResponse.success(data=users, message="Users retrieved successfully")
 
 
-@router.patch("/activate-user/{user_id}", response_model=BaseResponse[UserResponseModel])
+@router.patch("/activate/{user_id}", response_model=BaseResponse[UserResponseModel])
 async def activate_user(user_id: int, update_data: UpdateIsVerifiedModel, user_service: UserService = Depends()):
     """Activates a user."""
     user = user_service.get_user_by_id(user_id)
     updated_user = user_service.activate_user(user.id, update_data)
-    return BaseResponse.success(data=updated_user, message="User activated successfully")
+    action = "activated" if updated_user.is_verified else "deactivated"
+    return BaseResponse.success(data=updated_user, message=f"User {action} successfully")

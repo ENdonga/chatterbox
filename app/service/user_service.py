@@ -39,6 +39,10 @@ class UserService:
         """Fetch a user by email. Returns None if not found"""
         return self.db.query(User).filter(User.email == email).first()
 
+    def get_orm_user_by_id(self, user_id: int) -> User | None:
+        """Fetch a user by email. Returns None if not found"""
+        return self.db.query(User).filter(User.id == user_id).first()
+
     def user_exists(self, email: EmailStr) -> bool:
         """Check if a user with the given email exists."""
         user = self.get_user_by_email(email)
@@ -77,10 +81,12 @@ class UserService:
             raise InternalServerError(reason=str(e))
 
     def activate_user(self, user_id: int, update_data: UpdateIsVerifiedModel) -> UserResponseModel:
-        user = self.get_user_by_id(user_id)
+        user = self.get_orm_user_by_id(user_id)
+        if not user:
+            raise EntityNotFoundException(entity_name="User", identifier=user_id)
         try:
             # update user's is_verified flag
-            user.is_verified = update_data['is_verified']
+            user.is_verified = update_data.is_verified
             self.db.commit()
             self.db.refresh(user)
             return UserResponseModel.model_validate(user)
