@@ -1,7 +1,7 @@
 from typing import List
 
 from fastapi import Depends
-from sqlalchemy.exc import OperationalError
+from sqlalchemy.exc import OperationalError, IntegrityError
 from sqlalchemy.orm import Session
 
 from app.database import models
@@ -29,9 +29,10 @@ class PostService:
             raise EntityNotFoundException(entity_name="Post", identifier=post_id)
         return PostResponse.model_validate(post)
 
-    def create_post(self, post: PostModel) -> PostResponse:
+    def create_post(self, post: PostModel, current_user) -> PostResponse:
+        owner_id = current_user.get("id")
         try:
-            new_post = models.Post(**post.model_dump())
+            new_post = models.Post(owner_id=owner_id, **post.model_dump())
             self.db.add(new_post)
             self.db.commit()
             self.db.refresh(new_post)
@@ -39,6 +40,9 @@ class PostService:
         except OperationalError:
             self.db.rollback()
             raise DatabaseConnectionException(reason="Failed to connect to the database. Please try again later.")
+        except IntegrityError as e:
+            self.db.rollback()
+            raise e
         except TimeoutError:
             self.db.rollback()
             raise DatabaseTimeoutException(reason="Database operation timed out. Please try again later.")

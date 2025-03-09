@@ -26,9 +26,10 @@ async def get_post(post_id: int, post_service: PostService = Depends()):
 
 
 @router.post("", response_model=BaseResponse[PostResponse], status_code=status.HTTP_201_CREATED)
-async def create_posts(post: PostModel, post_service: PostService = Depends()):
+async def create_posts(post: PostModel, post_service: PostService = Depends(),
+                       current_user: dict = Depends(get_current_user)):
     """Creates a new post."""
-    new_post = post_service.create_post(post)
+    new_post = post_service.create_post(post, current_user)
     return BaseResponse.success(data=new_post, message="Post created successfully", status_code=status.HTTP_201_CREATED)
 
 

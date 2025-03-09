@@ -22,11 +22,9 @@ class PostModel(BaseModel):
         return value.strip()
 
 
-class PostResponse(BaseModel):
+class PostResponse(PostModel):
     id: int
-    title: str
-    content: str
-    published: bool
+    owner_id: int
 
     class Config:
         from_attributes = True
