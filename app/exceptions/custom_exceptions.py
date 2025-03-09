@@ -1,6 +1,7 @@
 from http import HTTPStatus
 
 from pydantic import EmailStr
+from sqlalchemy.exc import IntegrityError
 from starlette import status
 
 

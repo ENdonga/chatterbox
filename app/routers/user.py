@@ -9,7 +9,7 @@ from app.schemas.user_model import UserResponseModel, UserCreateModel, UpdateIsV
 from app.service.user_service import UserService
 from app.utils.token_util import get_current_user
 
-router = APIRouter(prefix="/users", tags=["Users"], dependencies=[Depends(get_current_user)])
+router = APIRouter(prefix="/users", tags=["Users"])
 
 
 @router.post("", response_model=BaseResponse[UserResponseModel])
