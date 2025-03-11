@@ -41,7 +41,7 @@ async def update_post(post_id: int, updated_post: PostModel, post_service: PostS
 
 
 @router.delete("/{post_id}", response_model=BaseResponse[PostResponse])
-async def delete_post(post_id: int, post_service: PostService = Depends()):
+async def delete_post(post_id: int, post_service: PostService = Depends(), current_user: dict = Depends(get_current_user)):
     """Deletes a single post from the database."""
-    post = post_service.delete_post(post_id)
+    post = post_service.delete_post(post_id, current_user)
     return BaseResponse.success(data=None, message="Post deleted successfully")

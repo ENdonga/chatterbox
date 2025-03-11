@@ -1,6 +1,8 @@
 from pydantic import BaseModel, Field, field_validator
 from pydantic_core.core_schema import FieldValidationInfo
 
+from app.schemas.user_model import UserResponseModel
+
 
 class PostModel(BaseModel):
     title: str = Field(..., min_length=3, strip_whitespace=True)
@@ -24,7 +26,7 @@ class PostModel(BaseModel):
 
 class PostResponse(PostModel):
     id: int
-    owner_id: int
+    owner: UserResponseModel
 
     class Config:
         from_attributes = True

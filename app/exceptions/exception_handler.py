@@ -12,7 +12,7 @@ from app.exceptions.custom_exceptions import (
     UnknownHashException,
     DatabaseException,
     DatabaseIntegrityException,
-    DatabaseConnectionException
+    DatabaseConnectionException, ActionNotPermittedException
 )
 from app.utils.exception_util import create_error_response
 
@@ -26,6 +26,14 @@ def chatterbox_exception_handler(request: Request, exc: ChatterBoxException) -> 
     # If database-related content is found, replace reason with a generic message
     masked_reason = "A database error occurred. Please contact support." if contains_db_info else exc.reason
     return create_error_response(status_code=exc.status_code, message=exc.message, reason=masked_reason)
+
+
+def action_not_permitted_exception_handler(request: Request, exc: ActionNotPermittedException) -> Response:
+    """Handles ActionNotPermittedException (user attempted unauthorized action)."""
+    logging.exception(
+        f"Unauthorized action attempt: User tried to perform a restricted action at {request.url.path}. "
+        f"Reason: {exc.reason} | Method: {request.method}")
+    return create_error_response(status_code=exc.status_code, message=exc.message, reason=exc.reason)
 
 
 def unknown_hash_exception_handler(request: Request, exc: UnknownHashException) -> Response:

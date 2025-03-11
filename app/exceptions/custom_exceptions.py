@@ -1,7 +1,6 @@
 from http import HTTPStatus
 
 from pydantic import EmailStr
-from sqlalchemy.exc import IntegrityError
 from starlette import status
 
 
@@ -18,6 +17,13 @@ class ChatterBoxException(Exception):
     def status_code_to_phrase(status_code: int) -> str:
         """Converts HTTP status codes to uppercase phrases (e.g., 409 → CONFLICT)"""
         return HTTPStatus(status_code).phrase.replace(" ", "_").upper()
+
+
+class ActionNotPermittedException(ChatterBoxException):
+    """The user does not have enough permissions to access this resource"""
+
+    def __init__(self, reason: str = "Insufficient permissions to perform this action"):
+        super().__init__(message="Insufficient permissions", reason=reason, status_code=status.HTTP_403_FORBIDDEN)
 
 
 class InvalidTokenException(ChatterBoxException):

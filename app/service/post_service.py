@@ -10,7 +10,8 @@ from app.exceptions.custom_exceptions import (
     EntityNotFoundException,
     DatabaseConnectionException,
     DatabaseTimeoutException,
-    InternalServerError
+    InternalServerError,
+    ActionNotPermittedException
 )
 from app.schemas.post_model import PostResponse, PostModel
 
@@ -65,8 +66,11 @@ class PostService:
         self.db.refresh(post)
         return PostResponse.model_validate(post)
 
-    def delete_post(self, post_id: int) -> PostResponse:
+    def delete_post(self, post_id: int, current_user) -> PostResponse:
         post = self.db.query(models.Post).filter(models.Post.id == post_id).first()
+        if post.owner.id != current_user.get("id"):
+            raise ActionNotPermittedException(
+                reason="You are not authorized to delete a post that does not belong to you.")
         if not post:
             raise EntityNotFoundException(entity_name="Post", identifier=post_id)
         self.db.delete(post)

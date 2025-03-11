@@ -4,13 +4,14 @@ from sqlalchemy.exc import IntegrityError, OperationalError
 
 from .database import models
 from .database.database import engine
-from .exceptions.custom_exceptions import ChatterBoxException, DatabaseException
+from .exceptions.custom_exceptions import ChatterBoxException, DatabaseException, ActionNotPermittedException
 from .exceptions.exception_handler import (
     chatterbox_exception_handler,
     integrity_error_handler,
     database_connection_error_handler,
     general_exception_handler,
-    database_exception_handler
+    database_exception_handler,
+    action_not_permitted_exception_handler
 )
 from .routers import post, user, authentication
 
@@ -56,6 +57,7 @@ def custom_openapi():
 app.openapi = custom_openapi
 
 # Register exception handlers
+app.add_exception_handler(ActionNotPermittedException, action_not_permitted_exception_handler)
 app.add_exception_handler(IntegrityError, integrity_error_handler)
 app.add_exception_handler(DatabaseException, database_exception_handler)
 app.add_exception_handler(OperationalError, database_connection_error_handler)
