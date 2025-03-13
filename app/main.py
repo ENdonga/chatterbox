@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.exceptions import RequestValidationError
 from fastapi.openapi.utils import get_openapi
 from sqlalchemy.exc import IntegrityError, OperationalError
 
@@ -11,7 +12,7 @@ from .exceptions.exception_handler import (
     database_connection_error_handler,
     general_exception_handler,
     database_exception_handler,
-    action_not_permitted_exception_handler
+    action_not_permitted_exception_handler, validation_exception_handler, not_found_exception_handler
 )
 from .routers import post, user, authentication
 
@@ -62,6 +63,8 @@ app.add_exception_handler(IntegrityError, integrity_error_handler)
 app.add_exception_handler(DatabaseException, database_exception_handler)
 app.add_exception_handler(OperationalError, database_connection_error_handler)
 app.add_exception_handler(ChatterBoxException, chatterbox_exception_handler)
+app.add_exception_handler(RequestValidationError, validation_exception_handler)
+app.add_exception_handler(404, not_found_exception_handler)
 app.add_exception_handler(Exception, general_exception_handler)
 
 app.include_router(post.router, tags=["Posts"])

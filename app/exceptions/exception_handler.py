@@ -1,6 +1,8 @@
 import logging
 import re
+from typing import List, Dict
 
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, Response
 from sqlalchemy.exc import OperationalError
 from starlette import status
@@ -12,8 +14,10 @@ from app.exceptions.custom_exceptions import (
     UnknownHashException,
     DatabaseException,
     DatabaseIntegrityException,
-    DatabaseConnectionException, ActionNotPermittedException
+    DatabaseConnectionException,
+    ActionNotPermittedException
 )
+from app.schemas.base_response import BaseResponse
 from app.utils.exception_util import create_error_response
 
 
@@ -66,16 +70,22 @@ async def integrity_error_handler(request: Request, exc: DatabaseIntegrityExcept
             reason=reason
         )
     # Handle Integrity errors
-    return create_error_response(status_code=status.HTTP_400_BAD_REQUEST, message="Database integrity error",
-                                 reason="A database constraint was violated (e.g., duplicate entry).")
+    return create_error_response(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        message="Database integrity error",
+        reason="A database constraint was violated (e.g., duplicate entry)."
+    )
 
 
 async def database_connection_error_handler(request: Request, exc: OperationalError) -> JSONResponse:
     """Handles database connection issues."""
     logging.exception(f"Database Connection Error at {request.url.path} - {exc}")
     custom_exception = DatabaseConnectionException()
-    return create_error_response(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, message="Database connection error",
-                                 reason="Could not connect to the database. Please try again later.")
+    return create_error_response(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        message="Database connection error",
+        reason="Could not connect to the database. Please try again later."
+    )
 
 
 async def database_exception_handler(request: Request, exc: DatabaseException):
@@ -85,6 +95,35 @@ async def database_exception_handler(request: Request, exc: DatabaseException):
         status_code=exc.status_code,
         message=exc.message,
         reason=exc.reason
+    )
+
+
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """Handles FastAPI validation errors and formats response using BaseResponse"""
+    errors: List[Dict[str, str]] = []
+    for error in exc.errors():
+        field_name = " → ".join(map(str, error["loc"]))
+        message = error["msg"]
+        errors.append({"field": field_name, "message": message})
+    return JSONResponse(
+        content=BaseResponse.error(
+            message="Validation Error",
+            reason=errors,
+            status_code=422
+        ),
+        status_code=422
+    )
+
+
+async def not_found_exception_handler(request: Request, exc: StarletteHTTPException):
+    """Custom handler for paths that do not exist 404 Not Found errors"""
+    return JSONResponse(
+        content=BaseResponse.error(
+            message="The requested resource was not found",
+            reason=f"Path '{request.url.path}' does not exist",
+            status_code=exc.status_code,
+        ),
+        status_code=exc.status_code,
     )
 
 

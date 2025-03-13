@@ -1,6 +1,6 @@
 from datetime import datetime
 from http import HTTPStatus
-from typing import Generic, TypeVar, Optional
+from typing import Generic, TypeVar, Optional, Union, List, Dict
 from zoneinfo import ZoneInfo
 
 from pydantic import BaseModel, ConfigDict
@@ -18,7 +18,7 @@ class BaseResponse(BaseModel, Generic[T]):
     status_code: int
     status: str
     message: str
-    reason: Optional[str] = None  # Only shown if there is an error
+    reason: Optional[Union[str, List[Dict[str, str]]]]= None  # Only shown if there is an error
     data: Optional[T] = None  # Data is optional for cases like delete operations
 
     # Exclude None fields globally
@@ -41,7 +41,7 @@ class BaseResponse(BaseModel, Generic[T]):
         return JSONResponse(content=response, status_code=status_code)
 
     @classmethod
-    def error(cls, message: str, reason: Optional[str] = None, status_code: int = 400):
+    def error(cls, message: str, reason: Optional[Union[str, List[Dict[str, str]]]] = None, status_code: int = 400):
         """Returns a dictionary instead of JSONResponse so exception handlers can use it"""
         return {
             "timestamp": datetime.now().isoformat(),
